@@ -7,20 +7,45 @@ import { createApp } from './app';
 const PORT = process.env.PORT || 3000;
 const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/finance_db';
 
-const startServer = async () => {
+const app = createApp();
+
+// Cache database connection
+let cachedDb: typeof mongoose | null = null;
+
+const connectDB = async () => {
+  if (cachedDb) return cachedDb;
+  
   try {
-    await mongoose.connect(MONGO_URI);
+    const db = await mongoose.connect(MONGO_URI);
+    cachedDb = db;
     console.log('Connected to MongoDB');
-
-    const app = createApp();
-
-    app.listen(PORT, () => {
-      console.log(`Server listening on port ${PORT}`);
-    });
+    return db;
   } catch (error) {
-    console.error('Failed to start server:', error);
-    process.exit(1);
+    console.error('Failed to connect to MongoDB:', error);
+    throw error;
   }
 };
 
-startServer();
+// Middleware to ensure DB is connected before processing requests (Serverless only)
+app.use(async (req, res, next) => {
+  try {
+    await connectDB();
+    next();
+  } catch (error) {
+    res.status(500).json({ error: 'Database connection failed' });
+  }
+});
+
+// Start local server if not in a Vercel/serverless environment
+if (process.env.NODE_ENV !== 'production' || !process.env.VERCEL) {
+  connectDB().then(() => {
+    app.listen(PORT, () => {
+      console.log(`Server listening on port ${PORT}`);
+    });
+  }).catch(err => {
+    console.error('Initial startup failed:', err);
+  });
+}
+
+// Export for Vercel
+export default app;
