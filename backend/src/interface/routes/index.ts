@@ -20,6 +20,12 @@ export const createRouter = () => {
   router.post('/auth/login', validateDto(LoginSchema), controllers.authController.login);
   router.post('/auth/refresh', controllers.authController.refresh);
   router.post('/auth/logout', controllers.authController.logout);
+  router.all('/auth/logout', (req, res) => {
+    res.status(405).json({ 
+      error: 'Method Not Allowed', 
+      message: 'The logout endpoint only supports POST requests. Do not use GET for logout operations.' 
+    });
+  });
 
   // User Routes (Admin Operations)
   router.post('/users', authMiddleware, adminOnly, validateDto(CreateUserSchema), controllers.userController.create);

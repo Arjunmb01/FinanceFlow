@@ -78,7 +78,18 @@ export const createApp = () => {
   // 5. Routes
   app.use('/api', createRouter());
 
-  // 6. Global Error Handler
+
+  app.use('/api', (req, res) => {
+    console.warn(`[404] ${req.method} ${req.originalUrl} - Not Found`);
+    res.status(404).json({
+      error: 'Not Found',
+      message: `The endpoint ${req.method} ${req.originalUrl} does not exist.`,
+      path: req.originalUrl,
+      method: req.method
+    });
+  });
+
+
   app.use(errorHandler);
 
   return app;

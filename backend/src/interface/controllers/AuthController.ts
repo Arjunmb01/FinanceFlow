@@ -78,15 +78,35 @@ export class AuthController {
   async logout(req: Request, res: Response, next: NextFunction) {
     try {
       const { role } = req.body;
-      if (role) {
-        const cookieName = `rt_${role}`;
-        const refreshToken = req.cookies[cookieName];
-        if (refreshToken) {
-          await this.authService.logout(refreshToken);
-        }
-        this.clearRefreshTokenCookie(res, role);
+      
+      if (!role) {
+        return res.status(400).json({ 
+          error: 'Role context required',
+          message: 'Please specify the role (admin, analyst, or viewer) to logout'
+        });
       }
-      res.status(204).send();
+
+      const cookieName = `rt_${role}`;
+      const refreshToken = req.cookies[cookieName];
+
+      if (refreshToken) {
+        try {
+          await this.authService.logout(refreshToken);
+        } catch (error) {
+          console.error(`Logout service error for role ${role}:`, error);
+        }
+      }
+
+      res.clearCookie(cookieName, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+      });
+
+      return res.status(200).json({ 
+        message: 'Logged out successfully',
+        role 
+      });
     } catch (error) {
       next(error);
     }
