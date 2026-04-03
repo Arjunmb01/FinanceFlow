@@ -10,22 +10,58 @@ import { errorHandler } from './interface/middlewares/errorHandler';
 let cachedDb: typeof mongoose | null = null;
 
 const connectDB = async () => {
-  if (cachedDb) return cachedDb;
-  const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/finance_db';
-  
+  // If we have a cached connection, check its state
+  if (cachedDb && mongoose.connection.readyState === 1) {
+    return cachedDb;
+  }
+
+  // If a connection is already in progress, wait for it
+  if (mongoose.connection.readyState === 2) {
+    console.log('[DB] Connection in progress, waiting...');
+    return new Promise((resolve) => {
+      const interval = setInterval(() => {
+        if (mongoose.connection.readyState === 1) {
+          clearInterval(interval);
+          resolve(cachedDb);
+        }
+      }, 100);
+    });
+  }
+
+  const MONGO_URI = process.env.MONGO_URI;
+  if (!MONGO_URI) {
+    console.error('[DB] CRITICAL: MONGO_URI is not defined in environment variables.');
+    throw new Error('Database configuration missing');
+  }
+
   try {
-    const db = await mongoose.connect(MONGO_URI);
+    console.log('[DB] Connecting to MongoDB...');
+    const db = await mongoose.connect(MONGO_URI, {
+      serverSelectionTimeoutMS: 5000, // Timeout after 5 seconds instead of 30
+      socketTimeoutMS: 45000, // Close sockets after 45 seconds of inactivity
+    });
     cachedDb = db;
-    console.log('Connected to MongoDB');
+    console.log('[DB] Successfully connected to MongoDB Atlas');
     return db;
   } catch (error) {
-    console.error('Failed to connect to MongoDB:', error);
+    console.error('[DB] Failed to connect to MongoDB:', error);
     throw error;
   }
 };
 
 export const createApp = () => {
   const app = express();
+
+  // Enable trust proxy for Vercel (crucial for correct IP detection)
+  app.set('trust proxy', 1);
+
+  // Diagnostic: Check for environment variables (without logging their values)
+  const requiredEnv = ['MONGO_URI', 'JWT_SECRET', 'JWT_REFRESH_SECRET'];
+  requiredEnv.forEach(env => {
+    if (!process.env[env]) {
+      console.warn(`[WARN] Missing environment variable: ${env}`);
+    }
+  });
 
   // 1. Logging & CORS (Must be FIRST to handle preflights instantly)
   app.use((req, res, next) => {
