@@ -1,6 +1,5 @@
 import { UserRepository } from '../repositories/UserRepository';
 import { RecordRepository } from '../repositories/RecordRepository';
-import { RefreshTokenRepository } from '../repositories/RefreshTokenRepository';
 
 import { AuthService } from '../services/AuthService';
 import { UserService } from '../services/UserService';
@@ -16,10 +15,7 @@ export const setupDependencies = () => {
   // 1. Repositories
   const userRepository = new UserRepository();
   const recordRepository = new RecordRepository();
-  const refreshTokenRepository = new RefreshTokenRepository();
-
-  // 2. Services
-  const authService = new AuthService(userRepository, refreshTokenRepository);
+  const authService = new AuthService(userRepository);
   const userService = new UserService(userRepository);
   const recordService = new RecordService(recordRepository);
   const dashboardService = new DashboardService(recordRepository);

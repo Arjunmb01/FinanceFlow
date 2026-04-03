@@ -1,7 +1,6 @@
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { UserRepository } from '../repositories/UserRepository';
-import { RefreshTokenRepository } from '../repositories/RefreshTokenRepository';
 
 import { Role } from '../models/enums';
 
@@ -16,8 +15,7 @@ export class AuthService {
   private refreshSecret: string;
 
   constructor(
-    private userRepository: UserRepository,
-    private refreshTokenRepository: RefreshTokenRepository
+    private userRepository: UserRepository
   ) {
     this.accessSecret = process.env.JWT_SECRET || 'access_secret';
     this.refreshSecret = process.env.JWT_REFRESH_SECRET || 'refresh_secret';
@@ -54,10 +52,6 @@ export class AuthService {
     const payload: TokenPayload = { userId: user._id.toString(), role: user.role, isActive: user.isActive };
     const { accessToken, refreshToken } = this.generateTokens(payload);
 
-    const expiresAt = new Date();
-    expiresAt.setDate(expiresAt.getDate() + 7);
-    await this.refreshTokenRepository.saveToken(user._id.toString(), refreshToken, expiresAt);
-
     return {
       accessToken,
       refreshToken,
@@ -83,11 +77,6 @@ export class AuthService {
     const payload: TokenPayload = { userId: user._id.toString(), role: user.role, isActive: user.isActive };
     const { accessToken, refreshToken } = this.generateTokens(payload);
 
-    // Save refresh token to DB
-    const expiresAt = new Date();
-    expiresAt.setDate(expiresAt.getDate() + 7);
-    await this.refreshTokenRepository.saveToken(user._id.toString(), refreshToken, expiresAt);
-
     return {
       accessToken,
       refreshToken,
@@ -96,26 +85,16 @@ export class AuthService {
   }
 
   async refreshTokens(oldRefreshToken: string) {
-    // Check DB to ensure it wasn't revoked
-    const tokenRecord = await this.refreshTokenRepository.findToken(oldRefreshToken);
-    if (!tokenRecord) throw new Error('Invalid refresh token');
-
     try {
       const payload = this.verifyRefreshToken(oldRefreshToken);
       
-      // Revoke the old token (Optionally, to prevent reuse)
-      await this.refreshTokenRepository.revokeToken(oldRefreshToken);
-
       const newPayload: TokenPayload = { 
         userId: payload.userId, 
         role: payload.role, 
         isActive: payload.isActive 
       };
+      
       const { accessToken, refreshToken } = this.generateTokens(newPayload);
-
-      const expiresAt = new Date();
-      expiresAt.setDate(expiresAt.getDate() + 7);
-      await this.refreshTokenRepository.saveToken(payload.userId, refreshToken, expiresAt);
 
       return { accessToken, refreshToken };
     } catch (e) {
@@ -123,7 +102,8 @@ export class AuthService {
     }
   }
 
-  async logout(refreshToken: string) {
-    await this.refreshTokenRepository.revokeToken(refreshToken);
+  async logout(_refreshToken: string) {
+    // With stateless JWT, server-side logout is a no-op.
+    // The client/controller must clear the cookie.
   }
 }
