@@ -19,13 +19,44 @@ const signupSchema = z.object({
 
 type SignupFormData = z.infer<typeof signupSchema>;
 
-export function Signup() {
+interface SignupProps {
+  role?: 'viewer' | 'analyst' | 'admin';
+}
+
+export function Signup({ role = 'viewer' }: SignupProps) {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
+
+  const theme = {
+    viewer: {
+      bg: 'bg-viewer-100/50',
+      text: 'text-viewer-600',
+      btn: 'from-viewer-600 to-indigo-600 hover:from-viewer-500 hover:to-indigo-500 hover:shadow-viewer-200',
+      alertBg: 'bg-viewer-50/80',
+      alertBorder: 'border-viewer-100',
+      alertColor: 'text-viewer-700'
+    },
+    analyst: {
+      bg: 'bg-analyst-100/50',
+      text: 'text-analyst-600',
+      btn: 'from-analyst-600 to-teal-600 hover:from-analyst-500 hover:to-teal-500 hover:shadow-analyst-200',
+      alertBg: 'bg-emerald-50/80',
+      alertBorder: 'border-emerald-100',
+      alertColor: 'text-emerald-700'
+    },
+    admin: {
+      bg: 'bg-admin-100/50',
+      text: 'text-admin-600',
+      btn: 'from-admin-600 to-orange-600 hover:from-admin-500 hover:to-orange-500 hover:shadow-admin-200',
+      alertBg: 'bg-admin-50/80',
+      alertBorder: 'border-admin-100',
+      alertColor: 'text-admin-700'
+    }
+  }[role];
 
   const {
     register,
@@ -43,11 +74,18 @@ export function Signup() {
         fullName: data.fullName,
         email: data.email,
         password: data.password,
-        role: 'viewer', // Standard signup is always for viewer role
+        role: role,
       });
 
       login(response.data.user, response.data.accessToken);
-      navigate('/');
+      
+      const targetPath = {
+        viewer: '/',
+        analyst: '/analyst',
+        admin: '/admin'
+      }[role];
+      
+      navigate(targetPath);
     } catch (err: any) {
       setError(err.response?.data?.error || err.message || 'Signup failed');
     } finally {
@@ -57,22 +95,22 @@ export function Signup() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50/50 p-4 relative overflow-hidden">
-      <div className="fixed top-[-20%] left-[-10%] w-[50vw] h-[50vw] rounded-full bg-viewer-100/50 blur-3xl pointer-events-none" />
+      <div className={`fixed top-[-20%] left-[-10%] w-[50vw] h-[50vw] rounded-full ${theme.bg} blur-3xl pointer-events-none`} />
       <div className="fixed bottom-[-20%] right-[-10%] w-[50vw] h-[50vw] rounded-full bg-indigo-100/50 blur-3xl pointer-events-none" />
       
       <div className="max-w-md w-full bg-white/70 backdrop-blur-xl rounded-[2.5rem] shadow-xl shadow-gray-200/50 border border-white p-8 relative z-10">
         <div className="text-center mb-8">
-          <div className="inline-flex p-3 rounded-2xl bg-viewer-100/50 text-viewer-600 mb-4">
+          <div className={`inline-flex p-3 rounded-2xl ${theme.bg} ${theme.text} mb-4`}>
             <UserPlus className="w-8 h-8" />
           </div>
-          <h1 className="text-3xl font-extrabold bg-gradient-to-r from-viewer-600 to-indigo-600 bg-clip-text text-transparent mb-2">
-            Create Account
+          <h1 className={`text-3xl font-extrabold bg-gradient-to-r ${theme.btn.split(' ').slice(0, 2).join(' ')} bg-clip-text text-transparent mb-2`}>
+            {role.charAt(0).toUpperCase() + role.slice(1)} Registration
           </h1>
           <p className="text-gray-500 font-medium tracking-tight">Join FinanceFlow Today</p>
         </div>
 
         {error && (
-          <div className="mb-6 p-4 rounded-2xl bg-viewer-50/80 border border-viewer-100 flex items-center gap-3 text-viewer-700 animate-in fade-in slide-in-from-top-4 duration-300">
+          <div className={`mb-6 p-4 rounded-2xl ${theme.alertBg} border ${theme.alertBorder} flex items-center gap-3 ${theme.alertColor} animate-in fade-in slide-in-from-top-4 duration-300`}>
             <ShieldAlert className="w-5 h-5 shrink-0" />
             <span className="font-bold text-sm leading-tight">{error}</span>
           </div>
