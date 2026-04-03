@@ -5,7 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
-import { ShieldAlert, Mail, Lock, LogIn, Loader2 } from 'lucide-react';
+import { Mail, Lock, LogIn, Loader2, Eye, EyeOff, ShieldAlert } from 'lucide-react';
 
 const loginSchema = z.object({
   email: z.string().email('Invalid email address'),
@@ -21,6 +21,7 @@ interface LoginProps {
 export function Login({ role }: LoginProps) {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
 
@@ -38,18 +39,27 @@ export function Login({ role }: LoginProps) {
       text: 'text-viewer-600',
       btn: 'from-viewer-600 to-indigo-600 hover:from-viewer-500 hover:to-indigo-500 hover:shadow-viewer-200',
       ring: 'focus:ring-viewer-100 focus:border-viewer-400',
+      alertBg: 'bg-viewer-50/80',
+      alertBorder: 'border-viewer-100',
+      alertColor: 'text-viewer-700'
     },
     analyst: {
       bg: 'bg-analyst-100/50',
       text: 'text-analyst-600',
       btn: 'from-analyst-600 to-teal-600 hover:from-analyst-500 hover:to-teal-500 hover:shadow-analyst-200',
       ring: 'focus:ring-analyst-100 focus:border-analyst-400',
+      alertBg: 'bg-emerald-50/80',
+      alertBorder: 'border-emerald-100',
+      alertColor: 'text-emerald-700'
     },
     admin: {
       bg: 'bg-admin-100/50',
       text: 'text-admin-600',
       btn: 'from-admin-600 to-orange-600 hover:from-admin-500 hover:to-orange-500 hover:shadow-admin-200',
       ring: 'focus:ring-admin-100 focus:border-admin-400',
+      alertBg: 'bg-admin-50/80',
+      alertBorder: 'border-admin-100',
+      alertColor: 'text-admin-700'
     }
   }[role];
 
@@ -76,7 +86,7 @@ export function Login({ role }: LoginProps) {
       
       navigate(targetPath);
     } catch (err: any) {
-      setError(err.response?.data?.error || err.message || 'Invalid email or password');
+      setError(err.response?.data?.error || err.message || 'Login failed');
     } finally {
       setLoading(false);
     }
@@ -87,7 +97,7 @@ export function Login({ role }: LoginProps) {
       <div className={`fixed top-[-20%] left-[-10%] w-[50vw] h-[50vw] rounded-full ${theme.bg} blur-3xl pointer-events-none`} />
       <div className="fixed bottom-[-20%] right-[-10%] w-[50vw] h-[50vw] rounded-full bg-indigo-100/50 blur-3xl pointer-events-none" />
       
-      <div className="max-w-md w-full bg-white/70 backdrop-blur-xl rounded-3xl shadow-xl shadow-gray-200/50 border border-white p-8 relative z-10">
+      <div className="max-w-md w-full bg-white/70 backdrop-blur-xl rounded-[2.5rem] shadow-xl shadow-gray-200/50 border border-white p-8 relative z-10">
         <div className="text-center mb-8">
           <div className={`inline-flex p-3 rounded-2xl ${theme.bg} ${theme.text} mb-4`}>
             <LogIn className="w-8 h-8" />
@@ -95,13 +105,13 @@ export function Login({ role }: LoginProps) {
           <h1 className={`text-3xl font-extrabold bg-gradient-to-r ${theme.btn.split(' ').slice(0, 2).join(' ')} bg-clip-text text-transparent mb-2`}>
             {role.charAt(0).toUpperCase() + role.slice(1)} Portal
           </h1>
-          <p className="text-gray-500 font-medium">FinanceFlow Secure Access</p>
+          <p className="text-gray-500 font-medium tracking-tight">FinanceFlow Secure Access</p>
         </div>
 
         {error && (
-          <div className="mb-6 p-4 rounded-2xl bg-red-50/80 border border-red-100 flex items-center gap-3 text-red-700">
+          <div className={`mb-6 p-4 rounded-2xl ${theme.alertBg} border ${theme.alertBorder} flex items-center gap-3 ${theme.alertColor} animate-in fade-in slide-in-from-top-4 duration-300`}>
             <ShieldAlert className="w-5 h-5 shrink-0" />
-            <span className="font-medium text-sm">{error}</span>
+            <span className="font-bold text-sm leading-tight">{error}</span>
           </div>
         )}
 
@@ -113,7 +123,7 @@ export function Login({ role }: LoginProps) {
               <input 
                 {...register('email')}
                 type="email" 
-                className={`w-full pl-12 pr-5 py-3.5 bg-white/50 border ${errors.email ? 'border-red-300 focus:ring-red-100' : `border-gray-200 ${theme.ring}`} rounded-2xl outline-none transition-all`}
+                className={`w-full pl-12 pr-5 py-3.5 bg-white/50 border ${errors.email ? 'border-red-300 focus:ring-red-100' : `border-gray-200 ${theme.ring}`} rounded-2xl outline-none transition-all font-medium`}
                 placeholder="email@example.com"
               />
             </div>
@@ -126,10 +136,22 @@ export function Login({ role }: LoginProps) {
               <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
               <input 
                 {...register('password')}
-                type="password" 
-                className={`w-full pl-12 pr-5 py-3.5 bg-white/50 border ${errors.password ? 'border-red-300 focus:ring-red-100' : `border-gray-200 ${theme.ring}`} rounded-2xl outline-none transition-all`}
+                type={showPassword ? "text" : "password"} 
+                className={`w-full pl-12 pr-12 py-3.5 bg-white/50 border ${errors.password ? 'border-red-300 focus:ring-red-100' : `border-gray-200 ${theme.ring}`} rounded-2xl outline-none transition-all font-medium`}
                 placeholder="••••••••"
               />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors p-1 flex items-center justify-center group"
+                aria-label={showPassword ? "Hide password" : "Show password"}
+              >
+                {showPassword ? (
+                  <EyeOff className="w-5 h-5 transition-transform group-active:scale-95" />
+                ) : (
+                  <Eye className="w-5 h-5 transition-transform group-active:scale-95" />
+                )}
+              </button>
             </div>
             {errors.password && <p className="text-xs font-medium text-red-500 ml-1">{errors.password.message}</p>}
           </div>
@@ -137,7 +159,7 @@ export function Login({ role }: LoginProps) {
           <button 
             type="submit" 
             disabled={loading}
-            className={`w-full flex items-center justify-center gap-2 py-4 px-6 rounded-2xl text-white font-bold text-lg bg-gradient-to-r ${theme.btn} active:scale-[0.98] transition-all disabled:opacity-70 disabled:cursor-not-allowed group shadow-lg`}
+            className={`w-full flex items-center justify-center gap-2 py-4 px-6 rounded-2xl text-white font-bold text-lg bg-gradient-to-r ${theme.btn} active:scale-[0.98] transition-all disabled:opacity-70 disabled:cursor-not-allowed group shadow-lg shadow-gray-200/50`}
           >
             {loading ? (
               <Loader2 className="w-5 h-5 animate-spin" />
@@ -156,7 +178,7 @@ export function Login({ role }: LoginProps) {
               </Link>
             </>
           ) : (
-            <Link to="/login" className="text-gray-400 hover:text-gray-600 font-bold transition-all text-sm">
+            <Link to="/login" className="text-gray-400 hover:text-gray-600 font-bold transition-all text-sm uppercase tracking-widest">
               Standard User Entry
             </Link>
           )}
@@ -164,4 +186,4 @@ export function Login({ role }: LoginProps) {
       </div>
     </div>
   );
-};
+}

@@ -27,24 +27,11 @@ const connectDB = async () => {
 export const createApp = () => {
   const app = express();
 
-  // 1. DB connection middleware (Ensure this is FIRST)
-  app.use(async (req, res, next) => {
-    try {
-      await connectDB();
-      next();
-    } catch (error) {
-      res.status(500).json({ error: 'Database connection failed' });
-    }
-  });
-
-  // 2. Basic Request Logger for Vercel debugging
+  // 1. Logging & CORS (Must be FIRST to handle preflights instantly)
   app.use((req, res, next) => {
-    console.log(`[${new Date().toISOString()}] ${req.method} ${req.url} - From: ${req.headers.origin || 'No Origin'}`);
+    console.log(`[${new Date().toISOString()}] ${req.method} ${req.url} - Origin: ${req.headers.origin || 'No Origin'}`);
     next();
   });
-
-  // 3. Security Middlewares
-  app.use(helmet());
 
   const allowedOrigins = [
     'http://localhost:5173',
@@ -65,13 +52,33 @@ export const createApp = () => {
     credentials: true,
   }));
 
+  // 2. DB connection middleware (Delayed until after CORS Preflight)
+  app.use(async (req, res, next) => {
+    // OPTIMIZATION: Don't connect to DB for OPTIONS/Preflight
+    if (req.method === 'OPTIONS') return next();
+    
+    try {
+      await connectDB();
+      next();
+    } catch (error) {
+      res.status(500).json({ error: 'Database connection failed' });
+    }
+  });
+
+  // 3. Security & Body Parsers
+  app.use(helmet());
   app.use(cookieParser());
   app.use(express.json());
 
-  // 4. Routes
+  // 4. Health Check
+  app.get('/api/health', (req, res) => {
+    res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });
+  });
+
+  // 5. Routes
   app.use('/api', createRouter());
 
-  // 5. Global Error Handler
+  // 6. Global Error Handler
   app.use(errorHandler);
 
   return app;

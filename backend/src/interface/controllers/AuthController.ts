@@ -79,6 +79,11 @@ export class AuthController {
     try {
       const { role } = req.body;
       if (role) {
+        const cookieName = `rt_${role}`;
+        const refreshToken = req.cookies[cookieName];
+        if (refreshToken) {
+          await this.authService.logout(refreshToken);
+        }
         this.clearRefreshTokenCookie(res, role);
       }
       res.status(204).send();

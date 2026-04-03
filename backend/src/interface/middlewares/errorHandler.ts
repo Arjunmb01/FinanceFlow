@@ -8,17 +8,24 @@ export const errorHandler = (err: Error, req: Request, res: Response, next: Next
     return res.status(400).json({ error: 'Validation Error', details: err.errors });
   }
 
-  if (err.message === 'Invalid email or password' || err.message === 'Unauthorized' || err.message === 'Forbidden') {
+  if (
+    err.message === 'Email not registered' || 
+    err.message === 'Incorrect password' || 
+    err.message === 'Invalid credentials' || 
+    err.message === 'Unauthorized' || 
+    err.message === 'Forbidden'
+  ) {
     return res.status(err.message === 'Forbidden' ? 403 : 401).json({ error: err.message });
   }
 
-  if (err.message === 'User not found' || err.message === 'Record not found') {
-    return res.status(404).json({ error: err.message });
+  if (err.message === 'User not found' || err.message === 'Record not found' || err.message === 'Account inactive') {
+    return res.status(err.message === 'Account inactive' ? 403 : 404).json({ error: err.message });
   }
 
   if (err.message === 'Email already in use') {
     return res.status(409).json({ error: err.message });
   }
 
-  res.status(500).json({ error: 'Internal Server Error' });
+  // Fallback for unexpected errors
+  res.status(500).json({ error: err.message || 'Internal Server Error' });
 };

@@ -64,14 +64,14 @@ export class AuthService {
     const user = await this.userRepository.findByEmail(normalizedEmail);
     if (!user) {
       console.log(`[AuthService] Login failed: User not found (${normalizedEmail})`);
-      throw new Error('Invalid credentials');
+      throw new Error('Email not registered');
     }
     if (!user.isActive) throw new Error('Account inactive');
 
     const isValid = await bcrypt.compare(passwordPlain, user.passwordHash);
     if (!isValid) {
       console.log(`[AuthService] Login failed: Password mismatch for ${normalizedEmail}`);
-      throw new Error('Invalid credentials');
+      throw new Error('Incorrect password');
     }
 
     const payload: TokenPayload = { userId: user._id.toString(), role: user.role, isActive: user.isActive };
@@ -102,8 +102,8 @@ export class AuthService {
     }
   }
 
-  async logout(_refreshToken: string) {
-    // With stateless JWT, server-side logout is a no-op.
-    // The client/controller must clear the cookie.
+  async logout(refreshToken: string) {
+    // With stateless JWT, server-side logout is a no-op unless blacklisting is added.
+    // We log it here for observability.
   }
 }

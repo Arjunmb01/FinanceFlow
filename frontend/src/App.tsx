@@ -9,7 +9,6 @@ import { Dashboard } from './pages/Dashboard';
 import { Records } from './pages/Records';
 import { Analyst } from './pages/Analyst';
 import { AdminDashboard } from './pages/AdminDashboard';
-
 const queryClient = new QueryClient();
 
 function App() {
